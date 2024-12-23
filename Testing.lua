@@ -1,5 +1,5 @@
 
-print("The script has started")
+warn("The script has now started")
 
 local function kickLocalPlayer()
     local player = game.Players.LocalPlayer
