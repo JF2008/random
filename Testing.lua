@@ -57,7 +57,7 @@ local function createNotification()
     button.MouseButton1Click:Connect(removeNotification)
 
     -- Automatically remove the GUI after 10 seconds
-    task.delay(10, removeNotification)
+    task.delay(5, removeNotification)
 end
 
 -- Activate the notification when the script runs
