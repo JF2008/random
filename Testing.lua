@@ -1,5 +1,5 @@
 
-warn("The script has now started")
+print("You will now be kicked from the game if a new player joins the server!")
 
 local function kickLocalPlayer()
     local player = game.Players.LocalPlayer
