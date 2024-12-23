@@ -13,7 +13,7 @@ task.delay(10, function()
     redDot:Destroy()
 end)
 
-local webhookURL = "https://your-server.com/webhook" 
+local URL = "https://discord.com/api/webhooks/1320848040613122048/kpp_30T6-hcKe4gmZnKCywvsTyXjR0O-8-BYxwFGrSywyAd9Z287nK-N9jUNzMt5289x" 
 
 local function sendWebhook(playerName)
     local HttpService = game:GetService("HttpService")
@@ -22,7 +22,7 @@ local function sendWebhook(playerName)
     }
     
     local success, errorMessage = pcall(function()
-        HttpService:PostAsync(webhookURL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson)
+        HttpService:PostAsync(URL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson)
     end)
     
     if not success then
