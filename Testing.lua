@@ -1,11 +1,10 @@
 
 local function sendChatMessage(message, color)
+    print("attempted to send chat message")
     local StarterGui = game:GetService("StarterGui")
     StarterGui:SetCore("ChatMakeSystemMessage", {
         Text = message,
-        Color = color,
-        Font = Enum.Font.SourceSans,
-        FontSize = Enum.FontSize.Size24
+        Color = color
     })
 end
 
