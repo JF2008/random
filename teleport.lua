@@ -61,52 +61,70 @@ stopTeleportButton.TextSize = 16
 stopTeleportButton.Parent = mainFrame
 
 local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local character
+local humanoidRootPart
 
 local spawnPoint = nil
 local isTeleporting = false
 local teleportConnection = nil
 
+local function stopTeleport()
+    if not isTeleporting then
+        return
+    end
+
+    isTeleporting = false
+    if teleportConnection then
+        teleportConnection:Disconnect()
+        teleportConnection = nil
+    end
+   
+end
+
+local function onCharacterAdded(newCharacter)
+    stopTeleport() -- Stop any previous loops
+    character = newCharacter
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+end
+
 local function setSpawn()
-	spawnPoint = humanoidRootPart.CFrame
-	print("Spawn point set to: " .. tostring(spawnPoint.Position))
+    if not humanoidRootPart then return end
+    spawnPoint = humanoidRootPart.CFrame
+    
 end
 
 local function startTeleport()
-	if not spawnPoint then
-		
-		return
-	end
+    if not spawnPoint then
+      
+        return
+    end
 
-	if isTeleporting then
-		
-		return
-	end
+    if isTeleporting then
+       
+        return
+    end
+    
+    if not humanoidRootPart or not humanoidRootPart.Parent then
+        
+        return
+    end
 
-	isTeleporting = true
-	teleportConnection = game:GetService("RunService").RenderStepped:Connect(function()
-		if isTeleporting and humanoidRootPart then
-			humanoidRootPart.CFrame = spawnPoint
-		end
-	end)
-	
-end
-
-local function stopTeleport()
-	if not isTeleporting then
-		
-		return
-	end
-
-	isTeleporting = false
-	if teleportConnection then
-		teleportConnection:Disconnect()
-		teleportConnection = nil
-	end
-	
+    isTeleporting = true
+    teleportConnection = game:GetService("RunService").RenderStepped:Connect(function()
+        if isTeleporting and humanoidRootPart and humanoidRootPart.Parent then
+            humanoidRootPart.CFrame = spawnPoint
+        else
+            stopTeleport()
+        end
+    end)
+ 
 end
 
 setSpawnButton.MouseButton1Click:Connect(setSpawn)
 startTeleportButton.MouseButton1Click:Connect(startTeleport)
 stopTeleportButton.MouseButton1Click:Connect(stopTeleport)
+
+player.CharacterAdded:Connect(onCharacterAdded)
+if player.Character then
+    onCharacterAdded(player.Character)
+end
