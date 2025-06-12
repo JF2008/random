@@ -1,3 +1,10 @@
+--[[
+    Admin Panel LocalScript v4.6
+    Changes:
+    - FIXED: Fly feature not working on mobile by using Humanoid.MoveDirection for universal, reliable input detection.
+    - All previous features and fixes remain.
+]]
+
 -- SERVICES
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -582,26 +589,14 @@ local function toggleFly(enabled)
             local camCF = Workspace.CurrentCamera.CFrame
             flyGyro.CFrame = camCF
             
-            local moveVector = Vector3.new()
+            local moveVector = humanoid.MoveDirection -- UNIVERSAL INPUT
+            
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVector = moveVector + Vector3.new(0,0,-1) end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVector = moveVector + Vector3.new(0,0,1) end
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVector = moveVector + Vector3.new(1,0,0) end
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVector = moveVector - Vector3.new(1,0,0) end
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVector = moveVector + Vector3.new(0,1,0) end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveVector = moveVector - Vector3.new(0,1,0) end
-            
-            -- Mobile Support
-            if UserInputService.TouchEnabled then
-                 for _, touch in ipairs(UserInputService:GetTouches()) do
-                    if touch.UserInputType == Enum.UserInputType.Touch and touch.UserInputState == Enum.UserInputState.Begin then
-                        local thumbstick = localPlayer.PlayerGui:FindFirstChild("TouchGui")
-                        if thumbstick and thumbstick:FindFirstChild("TouchControlFrame") and thumbstick.TouchControlFrame:FindFirstChild("DynamicThumbstickFrame") then
-                           local move = thumbstick.TouchControlFrame.DynamicThumbstickFrame.Position
-                           moveVector = moveVector + Vector3.new(move.X, 0, move.Y)
-                        end
-                    end
-                end
-            end
             
             if moveVector.Magnitude > 0 then
                 flyVelocity.Velocity = (CFrame.new(Vector3.new(), camCF.LookVector) * CFrame.new(moveVector.Unit * flySpeed)).Position
@@ -714,10 +709,13 @@ local function toggleEsp(enabled)
                         
                         -- Update Cham parts
                         for _, part in ipairs(espElements[player].Cham:GetChildren()) do
-                            local originalPart = targetChar:FindFirstChild(part.Name, true)
-                            if originalPart then
-                                part.CFrame = originalPart.CFrame
-                            end
+                             local originalPart = targetChar:FindFirstChild(part.Name, true)
+                             if originalPart and originalPart:IsA("BasePart") then
+                                 part.CFrame = originalPart.CFrame
+                             else
+                                cleanupEsp(player)
+                                break
+                             end
                         end
 
 
