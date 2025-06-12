@@ -1,4 +1,3 @@
-
 -- SERVICES
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -552,29 +551,36 @@ end
 local function toggleFly(enabled)
     isFlying = enabled
     if not humanoid or not humanoidRootPart then return end
+    
+    local flyGyro = humanoidRootPart:FindFirstChild("AdminFlyGyro")
+    local flyVelocity = humanoidRootPart:FindFirstChild("AdminFlyVelocity")
 
     if enabled then
         humanoid.PlatformStand = true
         
-        local gyro = Instance.new("BodyGyro")
-        gyro.Name = "AdminFlyGyro"
-        gyro.P = 500000
-        gyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        gyro.CFrame = humanoidRootPart.CFrame
-        gyro.Parent = humanoidRootPart
+        if not flyGyro then
+            flyGyro = Instance.new("BodyGyro")
+            flyGyro.Name = "AdminFlyGyro"
+            flyGyro.P = 500000
+            flyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+            flyGyro.Parent = humanoidRootPart
+        end
+        flyGyro.CFrame = humanoidRootPart.CFrame
         
-        local velocity = Instance.new("BodyVelocity")
-        velocity.Name = "AdminFlyVelocity"
-        velocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        velocity.Velocity = Vector3.new(0, 0, 0)
-        velocity.Parent = humanoidRootPart
+        if not flyVelocity then
+            flyVelocity = Instance.new("BodyVelocity")
+            flyVelocity.Name = "AdminFlyVelocity"
+            flyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+            flyVelocity.Parent = humanoidRootPart
+        end
+        flyVelocity.Velocity = Vector3.new(0, 0, 0)
         
         if flyConnection then flyConnection:Disconnect() end
         flyConnection = RunService.RenderStepped:Connect(function()
-            if not isFlying or not gyro.Parent or not velocity.Parent then return end
+            if not isFlying or not flyGyro.Parent or not flyVelocity.Parent then return end
             
             local camCF = Workspace.CurrentCamera.CFrame
-            gyro.CFrame = camCF
+            flyGyro.CFrame = camCF
             
             local moveVector = Vector3.new()
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVector = moveVector + Vector3.new(0,0,-1) end
@@ -584,16 +590,29 @@ local function toggleFly(enabled)
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVector = moveVector + Vector3.new(0,1,0) end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveVector = moveVector - Vector3.new(0,1,0) end
             
+            -- Mobile Support
+            if UserInputService.TouchEnabled then
+                 for _, touch in ipairs(UserInputService:GetTouches()) do
+                    if touch.UserInputType == Enum.UserInputType.Touch and touch.UserInputState == Enum.UserInputState.Begin then
+                        local thumbstick = localPlayer.PlayerGui:FindFirstChild("TouchGui")
+                        if thumbstick and thumbstick:FindFirstChild("TouchControlFrame") and thumbstick.TouchControlFrame:FindFirstChild("DynamicThumbstickFrame") then
+                           local move = thumbstick.TouchControlFrame.DynamicThumbstickFrame.Position
+                           moveVector = moveVector + Vector3.new(move.X, 0, move.Y)
+                        end
+                    end
+                end
+            end
+            
             if moveVector.Magnitude > 0 then
-                velocity.Velocity = (CFrame.new(Vector3.new(), camCF.LookVector) * CFrame.new(moveVector.Unit * flySpeed)).Position
+                flyVelocity.Velocity = (CFrame.new(Vector3.new(), camCF.LookVector) * CFrame.new(moveVector.Unit * flySpeed)).Position
             else
-                velocity.Velocity = Vector3.new()
+                flyVelocity.Velocity = Vector3.new()
             end
         end)
     else
         humanoid.PlatformStand = false
-        if humanoidRootPart:FindFirstChild("AdminFlyGyro") then humanoidRootPart.AdminFlyGyro:Destroy() end
-        if humanoidRootPart:FindFirstChild("AdminFlyVelocity") then humanoidRootPart.AdminFlyVelocity:Destroy() end
+        if flyGyro then flyGyro:Destroy() end
+        if flyVelocity then flyVelocity:Destroy() end
         
         if flyConnection then
             flyConnection:Disconnect()
@@ -601,6 +620,7 @@ local function toggleFly(enabled)
         end
     end
 end
+
 
 local function toggleNoclip(enabled)
     isNoclipping = enabled
@@ -671,24 +691,35 @@ local function toggleEsp(enabled)
                     if onScreen then
                         if not espElements[player] then espElements[player] = {} end
                         
-                        -- Cham
+                        -- Cham (Clone of character parts)
                         if not espElements[player].Cham then
-                            local cham = targetChar:Clone()
-                            cham.Name = "ESP_Cham"
-                            cham.Parent = espContainer
-                            for _, child in ipairs(cham:GetDescendants()) do
-                                if child:IsA("BasePart") or child:IsA("MeshPart") then
-                                    child.Material = Enum.Material.ForceField
-                                    child.Color = ACCENT_COLOR
-                                    child.Transparency = 0.5
-                                    child.CanCollide = false
-                                    child.Anchored = true
+                            local chamContainer = Instance.new("Model", espContainer)
+                            chamContainer.Name = "ESP_Cham_Container"
+                            espElements[player].Cham = chamContainer
+                            for _, part in ipairs(targetChar:GetDescendants()) do
+                                if part:IsA("BasePart") then
+                                    local clonePart = part:Clone()
+                                    clonePart.Material = Enum.Material.ForceField
+                                    clonePart.Color = ACCENT_COLOR
+                                    clonePart.Transparency = 0.6
+                                    clonePart.CanCollide = false
+                                    clonePart.Anchored = true
+                                    clonePart.Parent = chamContainer
+                                    for _, decal in ipairs(clonePart:GetChildren()) do
+                                        if decal:IsA("Decal") then decal:Destroy() end
+                                    end
                                 end
-                                if child:IsA("Decal") then child:Destroy() end
                             end
-                            espElements[player].Cham = cham
                         end
-                        espElements[player].Cham:SetPrimaryPartCFrame(targetChar.PrimaryPart.CFrame)
+                        
+                        -- Update Cham parts
+                        for _, part in ipairs(espElements[player].Cham:GetChildren()) do
+                            local originalPart = targetChar:FindFirstChild(part.Name, true)
+                            if originalPart then
+                                part.CFrame = originalPart.CFrame
+                            end
+                        end
+
 
                         -- Box and Info
                         local boxSize = Vector2.new(
